@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "UserStats": {
+      "title": "UserStats",
+      "description": "User game statistics",
+      "type": "object",
+      "properties": {
+        "level": { "type": "number" },
+        "xp": { "type": "number" },
+        "balance": { "type": "number" },
+        "completedQuests": { "type": "number" },
+        "failedQuests": { "type": "number" },
+        "streak": { "type": "number" },
+        "multiplier": { "type": "number" },
+        "lastActiveDate": { "type": "number" },
+        "lastLoginClaim": { "type": "number" }
+      },
+      "required": ["level", "xp", "balance", "completedQuests", "failedQuests", "streak", "multiplier"]
+    },
+    "Quest": {
+      "title": "Quest",
+      "description": "A game quest",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "recurrence": { "type": "string" },
+        "deadline": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "status": { "type": "string" },
+        "reward": {
+          "type": "object",
+          "properties": {
+            "coins": { "type": "number" },
+            "xp": { "type": "number" }
+          }
+        }
+      },
+      "required": ["title", "description", "difficulty", "deadline", "createdAt", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A coin transaction",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "amount": { "type": "number" },
+        "concept": { "type": "string" },
+        "date": { "type": "number" },
+        "type": { "type": "string" }
+      },
+      "required": ["id", "amount", "concept", "date", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "#/entities/UserStats",
+      "description": "User stats document"
+    },
+    "/users/{userId}/quests/{questId}": {
+      "schema": "#/entities/Quest",
+      "description": "Quests for a user"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "#/entities/Transaction",
+      "description": "Transactions for a user"
+    }
+  }
+}

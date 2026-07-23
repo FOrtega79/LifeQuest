@@ -1,0 +1,6 @@
+{
+  "name": "LifeQuest",
+  "description": "Una aplicación móvil diseñada para gamificar la vida diaria del usuario. La app transforma rutinas en misiones con un sistema de economía virtual.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
