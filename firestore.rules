@@ -1,15 +1,109 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    
+    function isValidUserStats(data) {
+      return data.keys().hasAll(['level', 'xp', 'balance', 'completedQuests', 'failedQuests', 'streak', 'multiplier'])
+        && data.level is number
+        && data.xp is number
+        && data.balance is number
+        && data.completedQuests is number
+        && data.failedQuests is number
+        && data.streak is number
+        && data.multiplier is number
+        && (('lastActiveDate' in data) == false || data.lastActiveDate is number)
+        && (('lastLoginClaim' in data) == false || data.lastLoginClaim is number);
+    }
+    
+    function isValidQuest(data) {
+      return data.keys().hasAll(['title', 'description', 'difficulty', 'deadline', 'createdAt', 'status'])
+        && data.title is string && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 2000
+        && data.difficulty is string && data.difficulty.size() <= 50
+        && data.deadline is number
+        && data.createdAt is number
+        && data.status is string && data.status.size() <= 50
+        && (('recurrence' in data) == false || (data.recurrence is string && data.recurrence.size() <= 50))
+        && (('reward' in data) == false || (
+             data.reward is map
+             && data.reward.keys().hasAll(['coins', 'xp'])
+             && data.reward.coins is number
+             && data.reward.xp is number
+           ));
+    }
+    
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['id', 'amount', 'concept', 'date', 'type'])
+        && data.id is string && data.id.size() <= 128
+        && data.amount is number
+        && data.concept is string && data.concept.size() <= 200
+        && data.date is number
+        && data.type is string && data.type.size() <= 50;
+    }
+
+    match /{document=**} { 
+      allow read, write: if false; 
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      allow list: if false; // Users shouldn't query the users collection
+      
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId 
+        && isValidId(userId)
+        && isValidUserStats(incoming())
+        && incoming().keys().size() <= 9;
+        
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidId(userId)
+        && isValidUserStats(incoming());
+        
+      allow delete: if false;
       
       match /quests/{questId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(questId);
+        allow list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+        
+        allow create: if isSignedIn() 
+          && request.auth.uid == userId 
+          && isValidId(userId)
+          && isValidId(questId)
+          && isValidQuest(incoming())
+          && incoming().keys().size() <= 8
+
+          
+        allow update: if isSignedIn()
+          && request.auth.uid == userId
+          && isValidId(userId)
+          && isValidId(questId)
+          && isValidQuest(incoming())
+          && incoming().createdAt == existing().createdAt;
+          
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(questId);
       }
       
       match /transactions/{transactionId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidId(transactionId);
+        allow list: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+        
+        allow create: if isSignedIn() 
+          && request.auth.uid == userId 
+          && isValidId(userId)
+          && isValidId(transactionId)
+          && isValidTransaction(incoming())
+          && incoming().keys().size() <= 5;
+          
+        allow update: if false; // Transactions should be immutable
+        allow delete: if false; // Transactions shouldn't be deleted
       }
     }
   }
